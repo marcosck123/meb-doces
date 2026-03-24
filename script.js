@@ -1,66 +1,76 @@
-let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
-let editandoIndex = null;
+let produtos = carregarProdutos();
+let editandoId = null;
 let paginaAtual = 'home';
+let filtroBusca = '';
+let ordenacaoPreco = 'padrao';
+let temaEscuro = carregarTema();
+
+function carregarProdutos() {
+  return JSON.parse(localStorage.getItem('produtos')) || [];
+}
+
+function salvarProdutos() {
+  localStorage.setItem('produtos', JSON.stringify(produtos));
+}
+
+function carregarTema() {
+  return localStorage.getItem('tema') !== 'claro';
+}
+
+function salvarTema() {
+  localStorage.setItem('tema', temaEscuro ? 'escuro' : 'claro');
+}
+
+function aplicarTema() {
+  document.body.classList.toggle('tema-claro', !temaEscuro);
+  const toggle = document.getElementById('btnTema');
+  if (toggle) {
+    toggle.textContent = temaEscuro ? '🌙 Dark' : '☀️ Light';
+  }
+}
+
+function alternarTema() {
+  temaEscuro = !temaEscuro;
+  salvarTema();
+  aplicarTema();
+}
 
 function irPara(pagina) {
   paginaAtual = pagina;
-
   if (pagina === 'produtos') {
     renderProdutos();
   } else {
     renderHome();
   }
-
   atualizarMenuAtivo();
+  aplicarTema();
 }
 
 function atualizarMenuAtivo() {
   const botoes = document.querySelectorAll('.menu-link');
   botoes.forEach((botao) => botao.classList.remove('ativo'));
 
-  const homeBtn = document.querySelector('.menu-link[onclick="irPara(\'home\')"]');
-  const produtosBtn = document.querySelector('.menu-link[onclick="irPara(\'produtos\')"]');
+  const homeBtn = document.querySelector('[data-pagina="home"]');
+  const produtosBtn = document.querySelector('[data-pagina="produtos"]');
 
-  if (paginaAtual === 'produtos' && produtosBtn) {
-    produtosBtn.classList.add('ativo');
-  }
-
-  if (paginaAtual === 'home' && homeBtn) {
-    homeBtn.classList.add('ativo');
-  }
+  if (paginaAtual === 'home' && homeBtn) homeBtn.classList.add('ativo');
+  if (paginaAtual === 'produtos' && produtosBtn) produtosBtn.classList.add('ativo');
 }
 
 function renderHome() {
   const app = document.getElementById('app');
-
   app.innerHTML = `
     <section class="hero-card">
       <h2>Sistema de Produtos</h2>
-      <p>Gerencie cadastro, edição e remoção de produtos em uma experiência SPA moderna, sem recarregar a página.</p>
+      <p>Gerencie produtos com busca, ordenação, edição e persistência local em uma SPA profissional.</p>
       <button class="btn-principal" onclick="irPara('produtos')">Ir para Produtos</button>
     </section>
 
     <section class="features">
-      <article class="feature-item">
-        <span>📦</span>
-        <h4>Cadastro rápido</h4>
-        <p>Adicione produtos em segundos com nome e preço.</p>
-      </article>
-      <article class="feature-item">
-        <span>✏️</span>
-        <h4>Edição simples</h4>
-        <p>Atualize qualquer item com poucos cliques.</p>
-      </article>
-      <article class="feature-item">
-        <span>🗑️</span>
-        <h4>Remoção prática</h4>
-        <p>Exclua produtos facilmente da sua lista.</p>
-      </article>
-      <article class="feature-item">
-        <span>💾</span>
-        <h4>Dados persistentes</h4>
-        <p>Informações salvas no localStorage automaticamente.</p>
-      </article>
+      <article class="feature-item"><span>🔎</span><h4>Busca em tempo real</h4><p>Filtre produtos instantaneamente.</p></article>
+      <article class="feature-item"><span>↕️</span><h4>Ordenação por preço</h4><p>Visualize do menor para maior e vice-versa.</p></article>
+      <article class="feature-item"><span>🧠</span><h4>CRUD inteligente</h4><p>Edição por ID único e feedback visual.</p></article>
+      <article class="feature-item"><span>🎨</span><h4>Dark mode</h4><p>Alterne tema escuro/claro com um clique.</p></article>
     </section>
   `;
 }
@@ -71,20 +81,33 @@ function renderProdutos() {
   app.innerHTML = `
     <section class="crud-card">
       <h2>Cadastro de Produtos</h2>
-      <p class="crud-subtitle">Adicione e gerencie seus produtos sem sair da página.</p>
+      <p class="crud-subtitle">Cadastre, busque e organize seus produtos sem recarregar a página.</p>
 
-      <div class="form-grid">
-        <div class="campo">
-          <label for="nomeProduto">Nome do Produto</label>
-          <input id="nomeProduto" type="text" placeholder="Ex: Notebook" />
+      <form id="formProduto" class="form-produto">
+        <div class="form-grid">
+          <div class="campo">
+            <label for="nomeProduto">Nome do Produto</label>
+            <input id="nomeProduto" type="text" placeholder="Ex: Notebook" />
+          </div>
+          <div class="campo">
+            <label for="precoProduto">Preço (R$)</label>
+            <input id="precoProduto" type="number" step="0.01" min="0.01" placeholder="Ex: 2999.90" />
+          </div>
         </div>
-        <div class="campo">
-          <label for="precoProduto">Preço (R$)</label>
-          <input id="precoProduto" type="number" step="0.01" min="0" placeholder="Ex: 2999.90" />
-        </div>
+
+        <button id="btnAdicionarSalvar" class="btn-principal" type="submit">Salvar produto</button>
+      </form>
+
+      <div id="mensagem" class="mensagem"></div>
+
+      <div class="filtros">
+        <input id="buscaProduto" type="text" placeholder="Buscar por nome..." value="${filtroBusca}" />
+        <select id="ordenacaoPreco">
+          <option value="padrao">Ordenar por preço</option>
+          <option value="crescente" ${ordenacaoPreco === 'crescente' ? 'selected' : ''}>Menor preço</option>
+          <option value="decrescente" ${ordenacaoPreco === 'decrescente' ? 'selected' : ''}>Maior preço</option>
+        </select>
       </div>
-
-      <button id="btnAdicionarSalvar" class="btn-principal">Salvar produto</button>
 
       <div class="lista-header">
         <h3>Produtos cadastrados</h3>
@@ -95,21 +118,62 @@ function renderProdutos() {
     </section>
   `;
 
-  document.getElementById('btnAdicionarSalvar').addEventListener('click', adicionarProduto);
+  registrarEventosProdutos();
   renderizarLista();
+  atualizarBotao();
 }
 
-function salvarNoLocalStorage() {
-  localStorage.setItem('produtos', JSON.stringify(produtos));
+function registrarEventosProdutos() {
+  document.getElementById('formProduto').addEventListener('submit', (event) => {
+    event.preventDefault();
+    adicionarProduto();
+  });
+
+  document.getElementById('buscaProduto').addEventListener('input', (event) => {
+    filtroBusca = event.target.value.toLowerCase().trim();
+    renderizarLista();
+  });
+
+  document.getElementById('ordenacaoPreco').addEventListener('change', (event) => {
+    ordenacaoPreco = event.target.value;
+    renderizarLista();
+  });
 }
 
-function formatarPreco(valor) {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function gerarIdUnico() {
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+
+function validarFormulario(nome, preco) {
+  if (!nome) return 'Nome é obrigatório.';
+  if (Number.isNaN(preco) || preco <= 0) return 'Preço deve ser maior que zero.';
+  return '';
+}
+
+function mostrarMensagem(texto, tipo = 'sucesso') {
+  const mensagem = document.getElementById('mensagem');
+  if (!mensagem) return;
+
+  mensagem.textContent = texto;
+  mensagem.className = `mensagem ${tipo} visivel`;
+
+  setTimeout(() => {
+    mensagem.classList.remove('visivel');
+  }, 2200);
+}
+
+function atualizarBotao() {
+  const botao = document.getElementById('btnAdicionarSalvar');
+  if (!botao) return;
+
+  botao.textContent = editandoId ? 'Salvar edição' : 'Salvar produto';
+  botao.classList.toggle('editando', Boolean(editandoId));
 }
 
 function limparInputs() {
   const nomeInput = document.getElementById('nomeProduto');
   const precoInput = document.getElementById('precoProduto');
+  if (!nomeInput || !precoInput) return;
 
   nomeInput.value = '';
   precoInput.value = '';
@@ -122,87 +186,113 @@ function adicionarProduto() {
 
   const nome = nomeInput.value.trim();
   const preco = Number(precoInput.value);
+  const erro = validarFormulario(nome, preco);
 
-  if (!nome || Number.isNaN(preco) || preco < 0) {
-    alert('Informe nome e preço válidos.');
+  if (erro) {
+    mostrarMensagem(erro, 'erro');
     return;
   }
 
-  const produto = { nome, preco };
-
-  if (editandoIndex !== null) {
-    produtos[editandoIndex] = produto;
-    editandoIndex = null;
-    document.getElementById('btnAdicionarSalvar').textContent = 'Salvar produto';
+  if (editandoId) {
+    produtos = produtos.map((produto) =>
+      produto.id === editandoId ? { ...produto, nome, preco } : produto
+    );
+    editandoId = null;
+    mostrarMensagem('Produto atualizado com sucesso!', 'sucesso');
   } else {
-    produtos.push(produto);
+    produtos.push({ id: gerarIdUnico(), nome, preco });
+    mostrarMensagem('Produto adicionado com sucesso!', 'sucesso');
   }
 
-  salvarNoLocalStorage();
+  salvarProdutos();
   limparInputs();
+  atualizarBotao();
   renderizarLista();
+}
+
+function obterProdutosVisiveis() {
+  let lista = [...produtos];
+
+  if (filtroBusca) {
+    lista = lista.filter((produto) => produto.nome.toLowerCase().includes(filtroBusca));
+  }
+
+  if (ordenacaoPreco === 'crescente') {
+    lista.sort((a, b) => a.preco - b.preco);
+  }
+
+  if (ordenacaoPreco === 'decrescente') {
+    lista.sort((a, b) => b.preco - a.preco);
+  }
+
+  return lista;
+}
+
+function formatarPreco(valor) {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function renderizarLista() {
   const listaProdutos = document.getElementById('listaProdutos');
   const totalPrecos = document.getElementById('totalPrecos');
+  if (!listaProdutos || !totalPrecos) return;
 
-  if (!listaProdutos) return;
+  const visiveis = obterProdutosVisiveis();
+  const total = visiveis.reduce((soma, produto) => soma + produto.preco, 0);
+  totalPrecos.textContent = `Total: ${formatarPreco(total)}`;
 
-  if (produtos.length === 0) {
-    listaProdutos.innerHTML = '<div class="lista-vazia">Nenhum produto cadastrado</div>';
-    totalPrecos.textContent = 'Total: R$ 0,00';
+  if (visiveis.length === 0) {
+    listaProdutos.innerHTML = '<div class="lista-vazia">Nenhum produto encontrado.</div>';
     return;
   }
 
-  listaProdutos.innerHTML = produtos
+  listaProdutos.innerHTML = visiveis
     .map(
-      (produto, index) => `
+      (produto) => `
         <div class="item-produto">
           <div class="info-produto">
             <strong>${produto.nome}</strong>
             <p>${formatarPreco(produto.preco)}</p>
           </div>
           <div class="acoes">
-            <button class="btn-editar" onclick="editar(${index})">Editar</button>
-            <button class="btn-remover" onclick="remover(${index})">Excluir</button>
+            <button class="btn-editar" onclick="editar(${produto.id})">Editar</button>
+            <button class="btn-remover" onclick="remover(${produto.id})">Excluir</button>
           </div>
         </div>
       `
     )
     .join('');
-
-  const total = produtos.reduce((soma, produto) => soma + produto.preco, 0);
-  totalPrecos.textContent = `Total: ${formatarPreco(total)}`;
 }
 
-function editar(index) {
-  const produto = produtos[index];
+function editar(id) {
+  const produto = produtos.find((item) => item.id === id);
   if (!produto) return;
 
   const nomeInput = document.getElementById('nomeProduto');
   const precoInput = document.getElementById('precoProduto');
-  const botao = document.getElementById('btnAdicionarSalvar');
 
   nomeInput.value = produto.nome;
   precoInput.value = produto.preco;
-  editandoIndex = index;
-  botao.textContent = 'Salvar edição';
+  editandoId = id;
+  atualizarBotao();
+  mostrarMensagem('Modo edição ativado.', 'info');
   nomeInput.focus();
 }
 
-function remover(index) {
-  produtos.splice(index, 1);
+function remover(id) {
+  produtos = produtos.filter((produto) => produto.id !== id);
 
-  if (editandoIndex === index) {
-    editandoIndex = null;
-    document.getElementById('btnAdicionarSalvar').textContent = 'Salvar produto';
+  if (editandoId === id) {
+    editandoId = null;
     limparInputs();
+    atualizarBotao();
   }
 
-  salvarNoLocalStorage();
+  salvarProdutos();
   renderizarLista();
+  mostrarMensagem('Produto removido.', 'sucesso');
 }
 
 renderHome();
 atualizarMenuAtivo();
+aplicarTema();

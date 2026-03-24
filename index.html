@@ -14,8 +14,9 @@
     <div class="container nav-wrap">
       <h1 class="logo">Sistema de Produtos</h1>
       <nav class="menu">
-        <button class="menu-link" onclick="irPara('home')">Home</button>
-        <button class="menu-link" onclick="irPara('produtos')">Produtos</button>
+        <button class="menu-link" data-pagina="home" onclick="irPara('home')">Home</button>
+        <button class="menu-link" data-pagina="produtos" onclick="irPara('produtos')">Produtos</button>
+        <button id="btnTema" class="menu-link" onclick="alternarTema()">🌙 Dark</button>
       </nav>
     </div>
   </header>

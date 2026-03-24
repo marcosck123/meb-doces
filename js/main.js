@@ -1,7 +1,6 @@
 import { renderHeader } from "../components/header.js";
-import { renderHome } from "../pages/home.js";
 import { iniciarRotas, renderizarRota } from "./routes.js";
-import { alternarTema, aplicarTema, obterTemaAtual, renderNoApp } from "./ui.js";
+import { alternarTema, aplicarTema, obterTemaAtual } from "./ui.js";
 
 function inicializarLayout() {
   const header = document.querySelector("#header");
@@ -23,7 +22,6 @@ function inicializarAplicacao() {
   inicializarLayout();
   inicializarTema();
   iniciarRotas();
-  renderNoApp(renderHome());
   renderizarRota();
 }
 

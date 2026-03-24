@@ -67,14 +67,14 @@ export function renderHome() {
           <span class="highlight-icon">01</span>
           <div>
             <h3>Arquitetura modular</h3>
-            <p class="section-text">Responsabilidades divididas em `main`, `routes`, `storage`, `products`, `ui`, `utils`, `pages` e `components`.</p>
+            <p class="section-text">Responsabilidades divididas em main, routes, storage, products, ui, utils, pages e components.</p>
           </div>
         </div>
         <div class="highlight-item">
           <span class="highlight-icon">02</span>
           <div>
             <h3>CRUD completo</h3>
-            <p class="section-text">Adicionar, editar, remover, buscar e ordenar com persistencia em `localStorage`.</p>
+            <p class="section-text">Adicionar, editar, remover, buscar e ordenar com persistencia em localStorage.</p>
           </div>
         </div>
         <div class="highlight-item">

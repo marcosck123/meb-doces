@@ -189,7 +189,7 @@ export function renderProdutos() {
           </div>
         </form>
 
-        <p class="helper-text">Os dados ficam salvos no navegador usando `localStorage`.</p>
+        <p class="helper-text">Os dados ficam salvos no navegador usando localStorage.</p>
       </article>
 
       <article class="panel">

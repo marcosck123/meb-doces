@@ -1,0 +1,224 @@
+:root {
+  --bg: #090b17;
+  --bg-soft: #14172b;
+  --card: #171a31;
+  --primary: #7b5cff;
+  --primary-dark: #6748ec;
+  --text: #ffffff;
+  --muted: #aeb4d6;
+  --border: #2a2f4f;
+  --danger: #ff5c8a;
+  --ok: #2ec27e;
+  --info: #3c8dff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #11152f 0%, var(--bg) 48%);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+body.tema-claro {
+  --bg: #eff2ff;
+  --bg-soft: #ffffff;
+  --card: #f6f8ff;
+  --primary: #5b44d6;
+  --primary-dark: #4a37bd;
+  --text: #1a2140;
+  --muted: #5f688e;
+  --border: #d4daf7;
+  --danger: #e94570;
+  --ok: #1f9d67;
+  --info: #2f6ed8;
+}
+
+main { flex: 1; }
+.container { width: min(980px, 92%); margin: 0 auto; }
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.nav-wrap {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logo { font-size: 1.1rem; font-weight: 800; }
+.menu { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.menu-link {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.menu-link:hover,
+.menu-link.ativo { color: var(--text); border-color: #5f6bc0; }
+
+#app { padding: 46px 0 64px; }
+
+.hero-card,
+.crud-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 95%, #ffffff 5%) 0%, var(--bg-soft) 100%);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+}
+
+.hero-card { text-align: center; }
+.hero-card h2 { font-size: clamp(1.7rem, 4vw, 2.7rem); margin-bottom: 12px; }
+.hero-card p { color: var(--muted); line-height: 1.6; max-width: 700px; margin: 0 auto; }
+
+.features { margin-top: 20px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+.feature-item {
+  background: color-mix(in srgb, var(--bg-soft) 75%, #000000 25%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.feature-item:hover { transform: translateY(-5px); border-color: #5360aa; }
+.feature-item span { font-size: 1.3rem; }
+.feature-item h4 { margin: 10px 0 8px; }
+.feature-item p { color: var(--muted); font-size: 0.94rem; }
+
+.btn-principal,
+.btn-editar,
+.btn-remover {
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-principal {
+  margin-top: 20px;
+  padding: 13px 24px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #4f6dff);
+  box-shadow: 0 10px 30px rgba(123, 92, 255, 0.3);
+}
+
+.btn-principal:hover { transform: translateY(-2px) scale(1.01); background: linear-gradient(135deg, var(--primary-dark), #425fe9); }
+.btn-principal.editando { background: linear-gradient(135deg, #36b37e, #1f9d67); }
+
+.crud-card h2 { margin-bottom: 8px; }
+.crud-subtitle { color: var(--muted); margin-bottom: 20px; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.campo label { display: block; margin-bottom: 8px; font-size: 0.93rem; }
+
+.campo input,
+.filtros input,
+.filtros select {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.campo input:focus,
+.filtros input:focus,
+.filtros select:focus {
+  border-color: #6071d8;
+  box-shadow: 0 0 0 3px rgba(96, 113, 216, 0.2);
+}
+
+.mensagem {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+}
+
+.mensagem.visivel { opacity: 1; transform: translateY(0); }
+.mensagem.sucesso { background: rgba(46, 194, 126, 0.14); border-color: rgba(46, 194, 126, 0.4); color: var(--ok); }
+.mensagem.erro { background: rgba(255, 92, 138, 0.14); border-color: rgba(255, 92, 138, 0.4); color: var(--danger); }
+.mensagem.info { background: rgba(60, 141, 255, 0.14); border-color: rgba(60, 141, 255, 0.4); color: var(--info); }
+
+.filtros {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 210px;
+  gap: 10px;
+}
+
+.lista-header {
+  margin-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+#totalPrecos { color: var(--muted); font-size: 0.94rem; }
+.lista-produtos { margin-top: 14px; display: grid; gap: 10px; }
+
+.item-produto,
+.lista-vazia {
+  background: color-mix(in srgb, var(--bg-soft) 82%, #000000 18%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px;
+}
+
+.item-produto { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.info-produto p { margin-top: 4px; color: var(--muted); }
+.acoes { display: flex; gap: 8px; }
+
+.btn-editar,
+.btn-remover { padding: 8px 12px; color: #fff; }
+.btn-editar { background: #3f4d96; }
+.btn-editar:hover { background: #4a58aa; }
+.btn-remover { background: rgba(255, 92, 138, 0.9); }
+.btn-remover:hover { background: var(--danger); }
+
+.lista-vazia { color: var(--muted); text-align: center; }
+
+.rodape {
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--muted);
+  padding: 18px 10px;
+}
+
+@media (max-width: 720px) {
+  .filtros { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .nav-wrap { flex-direction: column; justify-content: center; padding: 10px 0; }
+  .item-produto { flex-direction: column; align-items: flex-start; }
+  .acoes { width: 100%; }
+  .btn-editar, .btn-remover { flex: 1; }
+}

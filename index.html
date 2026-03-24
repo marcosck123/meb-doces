@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Produtos SPA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <div class="container nav-wrap">
+      <h1 class="logo">Sistema de Produtos</h1>
+      <nav class="menu">
+        <button class="menu-link" data-pagina="home" onclick="irPara('home')">Home</button>
+        <button class="menu-link" data-pagina="produtos" onclick="irPara('produtos')">Produtos</button>
+        <button id="btnTema" class="menu-link" onclick="alternarTema()">🌙 Dark</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div id="app" class="container"></div>
+  </main>
+
+  <footer class="rodape">
+    <p>Projeto desenvolvido para aprendizado</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -10,7 +10,7 @@ const btnAcessarCadastro = document.getElementById('btnAcessarCadastro');
 
 if (btnAcessarCadastro) {
   btnAcessarCadastro.addEventListener('click', () => {
-    window.location.href = 'produtos.html';
+    window.location.href = '/produtos';
   });
 }
 

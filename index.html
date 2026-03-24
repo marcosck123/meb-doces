@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Produtos | Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <div class="container nav-wrap">
+      <h1 class="logo">Sistema de Produtos</h1>
+      <nav class="menu">
+        <a href="index.html" class="menu-link active">Home</a>
+        <a href="produtos.html" class="menu-link">Produtos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-content">
+        <p class="tag">CRUD em JavaScript puro</p>
+        <h2>Gerencie seus produtos de forma simples</h2>
+        <p class="subtitulo">
+          Interface moderna para cadastrar, editar, remover e salvar produtos localmente com praticidade.
+        </p>
+        <button id="btnAcessarCadastro" class="btn-principal">Acessar Cadastro</button>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="container">
+        <h3 class="section-title">Funcionalidades</h3>
+        <div class="cards-grid">
+          <article class="card">
+            <span class="icone">📦</span>
+            <h4>Cadastro de produtos</h4>
+            <p>Adicione produtos com nome e preço em poucos segundos.</p>
+          </article>
+
+          <article class="card">
+            <span class="icone">✏️</span>
+            <h4>Edição fácil</h4>
+            <p>Atualize as informações com um clique e salve na hora.</p>
+          </article>
+
+          <article class="card">
+            <span class="icone">🗑️</span>
+            <h4>Remoção rápida</h4>
+            <p>Exclua itens da lista com segurança e praticidade.</p>
+          </article>
+
+          <article class="card">
+            <span class="icone">💾</span>
+            <h4>Armazenamento local</h4>
+            <p>Dados persistidos no localStorage, sem banco externo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p>Projeto desenvolvido para aprendizado</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

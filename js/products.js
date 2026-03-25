@@ -3,7 +3,21 @@ import { gerarId } from "./utils.js";
 
 const STORAGE_KEY = "crud_produtos";
 
-let produtos = carregarLocalStorage(STORAGE_KEY, []);
+function normalizarProdutoPersistido(produto) {
+  return {
+    ...produto,
+    nome: typeof produto.nome === "string" ? produto.nome.trim() : "",
+    preco: Number(produto.preco) || 0,
+    categoria: typeof produto.categoria === "string" ? produto.categoria.trim() : "",
+    estoque:
+      produto.estoque === undefined || produto.estoque === null || produto.estoque === ""
+        ? undefined
+        : Number(produto.estoque),
+    criadoEm: Number(produto.criadoEm) || Date.now(),
+  };
+}
+
+let produtos = carregarLocalStorage(STORAGE_KEY, []).map(normalizarProdutoPersistido);
 
 function persistir() {
   salvarLocalStorage(STORAGE_KEY, produtos);
@@ -53,11 +67,13 @@ export function obterProdutoPorId(id) {
   return produtos.find((produto) => produto.id === id) ?? null;
 }
 
-export function adicionarProduto({ nome, preco }) {
+export function adicionarProduto({ nome, preco, categoria, estoque }) {
   const produto = {
     id: gerarId(),
     nome: nome.trim(),
     preco: Number(preco),
+    categoria: categoria?.trim() ?? "",
+    estoque: estoque === undefined ? undefined : Number(estoque),
     criadoEm: Date.now(),
   };
 
@@ -79,6 +95,8 @@ export function editarProduto(id, dadosAtualizados) {
     ...dadosAtualizados,
     nome: dadosAtualizados.nome.trim(),
     preco: Number(dadosAtualizados.preco),
+    categoria: dadosAtualizados.categoria?.trim() ?? "",
+    estoque: dadosAtualizados.estoque === undefined ? undefined : Number(dadosAtualizados.estoque),
   };
 
   produtos = produtos.map((produto) =>

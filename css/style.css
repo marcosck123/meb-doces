@@ -393,6 +393,7 @@ body.theme-light .eyebrow {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
 .field-group input:focus,
@@ -400,6 +401,24 @@ body.theme-light .eyebrow {
 .toolbar select:focus {
   border-color: rgba(47, 125, 244, 0.65);
   box-shadow: 0 0 0 4px rgba(47, 125, 244, 0.12);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.field-group.has-error input {
+  border-color: rgba(228, 88, 88, 0.75);
+  box-shadow: 0 0 0 4px rgba(228, 88, 88, 0.12);
+}
+
+.field-error {
+  min-height: 18px;
+  color: #ff8d8d;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+body.theme-light .field-error {
+  color: var(--danger);
 }
 
 .form-actions,

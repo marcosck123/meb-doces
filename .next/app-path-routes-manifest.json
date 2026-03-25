@@ -4,6 +4,5 @@
   "/cadastro/page": "/cadastro",
   "/dashboard/page": "/dashboard",
   "/login/page": "/login",
-  "/page": "/",
-  "/verificar-telefone/page": "/verificar-telefone"
+  "/page": "/"
 }

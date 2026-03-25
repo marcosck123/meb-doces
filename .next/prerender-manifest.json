@@ -145,37 +145,13 @@
         "x-next-revalidated-tags",
         "x-next-revalidate-tag-token"
       ]
-    },
-    "/verificar-telefone": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/verificar-telefone",
-      "dataRoute": "/verificar-telefone.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
     }
   },
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "67890ad36103192daebc22e33ed3ad0c",
-    "previewModeSigningKey": "04db0c2f4a596b557ed09642a948f19e5819cd087a04f3d7072bac306357c0bd",
-    "previewModeEncryptionKey": "cc2b92267c56dfc2ad77032a86dbf7c6aa867664844f0405911f5cef0e369de5"
+    "previewModeId": "69050671a0b2eed9238edccc4ee396b9",
+    "previewModeSigningKey": "edc6e0e0aef6ca5fe986769d9771f68d74b8586ca4f070942d49fda10215d01f",
+    "previewModeEncryptionKey": "c81ae3e75e5f6e83cf73df3e316cd01f0746ce3871f59bb04308e35567ac5c97"
   }
 }

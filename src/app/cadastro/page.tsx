@@ -2,7 +2,6 @@
 
 import {
   createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { doc, query, where, getDocs, collection, serverTimestamp, setDoc } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
@@ -19,12 +18,12 @@ import {
   emailRegex,
   evaluatePassword,
   isPasswordValid,
+  mapAuthError,
   normalizeUsername,
 } from "@/lib/auth";
 import { auth, db, ensureAuthPersistence } from "@/lib/firebase";
 
 type AvailabilityState = "idle" | "checking" | "available" | "unavailable";
-const PHONE_STEP_KEY = "pending-phone-verification";
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -32,8 +31,6 @@ export default function CadastroPage() {
   const [usernameState, setUsernameState] = useState<AvailabilityState>("idle");
   const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [emailState, setEmailState] = useState<AvailabilityState>("idle");
-  const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -48,7 +45,6 @@ export default function CadastroPage() {
     usernameNormalized.length >= 3 &&
     usernameState === "available" &&
     emailRegex.test(email) &&
-    emailState === "available" &&
     isPasswordValid(password) &&
     passwordsMatch;
 
@@ -81,36 +77,6 @@ export default function CadastroPage() {
     setUsernameMessage("Nome de usuário disponível ✓");
   }
 
-  async function checkEmailAvailability() {
-    const value = email.trim();
-
-    if (!value) {
-      setEmailState("idle");
-      setEmailMessage(null);
-      return;
-    }
-
-    if (!emailRegex.test(value)) {
-      setEmailState("unavailable");
-      setEmailMessage("Insira um e-mail válido");
-      return;
-    }
-
-    setEmailState("checking");
-    setEmailMessage("Verificando disponibilidade...");
-
-    const methods = await fetchSignInMethodsForEmail(auth, value);
-
-    if (methods.length > 0) {
-      setEmailState("unavailable");
-      setEmailMessage("E-mail já está em uso, tente outro");
-      return;
-    }
-
-    setEmailState("available");
-    setEmailMessage("E-mail disponível ✓");
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -132,10 +98,9 @@ export default function CadastroPage() {
         criadoEm: serverTimestamp(),
       });
 
-      window.sessionStorage.setItem(PHONE_STEP_KEY, "true");
-      router.replace("/verificar-telefone");
-    } catch {
-      setSubmitError("Não foi possível concluir o cadastro. Tente novamente.");
+      router.replace("/dashboard");
+    } catch (error) {
+      setSubmitError(mapAuthError(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -190,25 +155,22 @@ export default function CadastroPage() {
           <Input
             value={email}
             type="email"
-            state={
-              emailState === "unavailable"
-                ? "error"
-                : emailState === "available"
-                  ? "success"
-                  : "default"
-            }
-            onBlur={() => void checkEmailAvailability()}
+            state={email.length === 0 ? "default" : emailRegex.test(email) ? "success" : "error"}
             onChange={(event) => {
               setEmail(event.target.value);
-              setEmailState("idle");
-              setEmailMessage(null);
             }}
             placeholder="nome@exemplo.com"
             required
           />
           <AnimatedMessage
-            message={emailMessage}
-            type={emailState === "unavailable" ? "error" : "success"}
+            message={
+              email.length === 0
+                ? null
+                : emailRegex.test(email)
+                  ? "Formato de e-mail válido ✓"
+                  : "Insira um e-mail válido"
+            }
+            type={emailRegex.test(email) ? "success" : "error"}
           />
         </div>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  fetchSignInMethodsForEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -38,12 +37,6 @@ export default function LoginPage() {
 
       if (!emailRegex.test(normalizedEmail)) {
         throw new Error("Insira um e-mail válido");
-      }
-
-      const methods = await fetchSignInMethodsForEmail(auth, normalizedEmail);
-
-      if (methods.length === 0) {
-        throw new Error("E-mail não encontrado");
       }
 
       return normalizedEmail;

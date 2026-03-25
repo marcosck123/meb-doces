@@ -36,7 +36,7 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await signOut(auth);
-    router.replace("/login");
+    router.replace("/");
   }
 
   return (
@@ -57,7 +57,7 @@ export default function DashboardPage() {
           </p>
           <p>
             <span className="text-slate-400">Telefone:</span>{" "}
-            {profile?.telefone ?? "Pendente"}
+            {profile?.telefone ?? "Desativado por enquanto"}
           </p>
         </div>
         <Button onClick={handleLogout} type="button">

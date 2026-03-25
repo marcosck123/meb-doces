@@ -58,12 +58,6 @@
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
-    },
-    {
-      "page": "/verificar-telefone",
-      "regex": "^/verificar\\-telefone(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/verificar\\-telefone(?:/)?$"
     }
   ],
   "dataRoutes": [],

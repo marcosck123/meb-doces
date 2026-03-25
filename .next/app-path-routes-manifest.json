@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/_global-error/page": "/_global-error",
+  "/cadastro/page": "/cadastro",
+  "/dashboard/page": "/dashboard",
+  "/login/page": "/login",
+  "/page": "/",
+  "/verificar-telefone/page": "/verificar-telefone"
+}

@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/verificar-telefone/layout,_N_T_/verificar-telefone/page,_N_T_/verificar-telefone"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/verificar-telefone/__PAGE__",
+    "/verificar-telefone",
+    "/_index",
+    "/_head"
+  ]
+}

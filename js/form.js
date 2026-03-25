@@ -7,10 +7,11 @@ import {
   obterDadosFormularioProduto,
   preencherFormularioProduto,
   setButtonLoading,
+  atualizarSelectCategorias,
 } from "./ui.js";
 import { delay } from "./utils.js";
 
-export function bindProdutoForm({ obterEditandoId, setEditandoId, onSuccess }) {
+export function bindProdutoForm({ obterEditandoId, setEditandoId, onSuccess, obterCategorias }) {
   const form = document.querySelector("#product-form");
   const submitButton = document.querySelector("#submit-product");
 
@@ -61,6 +62,7 @@ export function bindProdutoForm({ obterEditandoId, setEditandoId, onSuccess }) {
       }
 
       form.reset();
+      atualizarSelectCategorias(obterCategorias?.() ?? []);
       preencherFormularioProduto(null);
       setEditandoId(null);
       onSuccess?.();

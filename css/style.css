@@ -171,11 +171,17 @@ body.theme-light .topbar {
   align-items: start;
 }
 
+.stack-layout {
+  display: grid;
+  gap: 22px;
+}
+
 /* components */
 
 .panel,
 .stat-card,
 .product-card,
+.category-card,
 .empty-state {
   background: linear-gradient(180deg, var(--surface), var(--surface-2));
   border: 1px solid var(--border);
@@ -385,6 +391,7 @@ body.theme-light .eyebrow {
 }
 
 .field-group input,
+.field-group select,
 .toolbar input,
 .toolbar select {
   width: 100%;
@@ -397,6 +404,7 @@ body.theme-light .eyebrow {
 }
 
 .field-group input:focus,
+.field-group select:focus,
 .toolbar input:focus,
 .toolbar select:focus {
   border-color: rgba(47, 125, 244, 0.65);
@@ -405,7 +413,8 @@ body.theme-light .eyebrow {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.field-group.has-error input {
+.field-group.has-error input,
+.field-group.has-error select {
   border-color: rgba(228, 88, 88, 0.75);
   box-shadow: 0 0 0 4px rgba(228, 88, 88, 0.12);
 }
@@ -454,6 +463,14 @@ body.theme-light .field-error {
   align-items: center;
 }
 
+.category-card {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
 .product-name {
   font-size: 1.05rem;
   font-weight: 700;
@@ -494,6 +511,12 @@ body.theme-light .price-badge {
   border-radius: 12px;
   font-weight: 700;
   color: #fff;
+}
+
+.category-icon-button {
+  min-width: 48px;
+  justify-content: center;
+  font-size: 1.05rem;
 }
 
 .action-edit {

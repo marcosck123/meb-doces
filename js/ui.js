@@ -1,7 +1,7 @@
 import { carregarLocalStorage, salvarLocalStorage } from "./storage.js";
 import { renderProductCard } from "../components/card.js";
 import { calcularTotal } from "./products.js";
-import { formatarMoeda } from "./utils.js";
+import { escapeHtml, formatarMoeda } from "./utils.js";
 
 const THEME_KEY = "crud_tema";
 
@@ -49,7 +49,16 @@ export function setButtonLoading(botao, carregando, textoPadrao, textoLoading) {
   botao.textContent = carregando ? textoLoading : textoPadrao;
 }
 
-export function renderFormularioProduto(editando = false) {
+function renderOptionsCategorias(categorias, categoriaSelecionada = "") {
+  return [
+    '<option value="">Sem categoria</option>',
+    ...categorias.map((categoria) => `
+      <option value="${escapeHtml(categoria)}" ${categoria === categoriaSelecionada ? "selected" : ""}>${escapeHtml(categoria)}</option>
+    `),
+  ].join("");
+}
+
+export function renderFormularioProduto(editando = false, categorias = []) {
   return `
     <form id="product-form" class="form-fields" novalidate>
       <div class="field-group" data-field="nome">
@@ -66,7 +75,9 @@ export function renderFormularioProduto(editando = false) {
 
       <div class="field-group" data-field="categoria">
         <label for="product-category">Categoria</label>
-        <input id="product-category" name="categoria" type="text" placeholder="Ex: Eletronicos" autocomplete="off" />
+        <select id="product-category" name="categoria">
+          ${renderOptionsCategorias(categorias)}
+        </select>
         <p class="field-error" id="product-category-error" aria-live="polite"></p>
       </div>
 
@@ -86,6 +97,25 @@ export function renderFormularioProduto(editando = false) {
   `;
 }
 
+export function renderFormularioCategoria(editando = false) {
+  return `
+    <form id="category-form" class="form-fields category-form" novalidate>
+      <div class="field-group">
+        <label for="category-name">Nome da categoria</label>
+        <input id="category-name" name="nome-categoria" type="text" placeholder="Ex: Doces" autocomplete="off" />
+        <p class="field-error" id="category-name-error" aria-live="polite"></p>
+      </div>
+
+      <div class="form-actions">
+        <button id="submit-category" class="button button-primary" type="submit">${editando ? "Atualizar" : "Adicionar Categoria"}</button>
+        <button id="cancel-category-edit" class="button button-secondary ${editando ? "" : "hidden"}" type="button">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  `;
+}
+
 export function renderListaProdutos(lista) {
   if (!lista.length) {
     return `
@@ -99,19 +129,83 @@ export function renderListaProdutos(lista) {
   return lista.map(renderProductCard).join("");
 }
 
-export function renderPaginaProdutos({ lista, busca, ordenacao, editando }) {
+export function renderListaCategorias(categorias) {
+  if (!categorias.length) {
+    return `
+      <div class="empty-state">
+        <p>Nenhuma categoria cadastrada.</p>
+      </div>
+    `;
+  }
+
+  return categorias.map((categoria) => `
+    <article class="category-card">
+      <div>
+        <h3 class="product-name">${escapeHtml(categoria.nome)}</h3>
+        <div class="product-meta">
+          <span>${categoria.quantidadeProdutos} produto(s)</span>
+        </div>
+      </div>
+
+      <div class="action-group">
+        <button
+          class="action-button action-edit category-icon-button"
+          type="button"
+          data-category-action="editar"
+          data-category-name="${escapeHtml(categoria.nome)}"
+          aria-label="Editar categoria ${escapeHtml(categoria.nome)}"
+        >
+          &#9998;
+        </button>
+        <button
+          class="action-button action-delete category-icon-button"
+          type="button"
+          data-category-action="remover"
+          data-category-name="${escapeHtml(categoria.nome)}"
+          aria-label="Excluir categoria ${escapeHtml(categoria.nome)}"
+        >
+          &#128465;
+        </button>
+      </div>
+    </article>
+  `).join("");
+}
+
+export function renderPaginaProdutos({
+  lista,
+  busca,
+  ordenacao,
+  editando,
+  categorias,
+  editandoCategoria,
+}) {
   return `
     <section class="page-grid products-layout">
-      <article class="panel">
-        <div>
-          <h1 class="section-title">Cadastro de produtos</h1>
-          <p class="panel-subtitle">Formulario validado com Zod, feedback imediato e persistencia local automatica.</p>
-        </div>
+      <div class="stack-layout">
+        <article class="panel">
+          <div>
+            <h1 class="section-title">Cadastro de produtos</h1>
+            <p class="panel-subtitle">Formulario validado com Zod, feedback imediato e persistencia local automatica.</p>
+          </div>
 
-        ${renderFormularioProduto(editando)}
+          ${renderFormularioProduto(editando, categorias.map((categoria) => categoria.nome))}
 
-        <p class="helper-text">Os dados ficam salvos no navegador usando localStorage.</p>
-      </article>
+          <p class="helper-text">Os dados ficam salvos no navegador usando localStorage.</p>
+        </article>
+
+        <article class="panel">
+          <div>
+            <h2 class="section-title">Gerenciar Categorias</h2>
+            <p class="panel-subtitle">CRUD completo de categorias com integracao direta aos produtos.</p>
+          </div>
+
+          ${renderFormularioCategoria(editandoCategoria)}
+
+          <div id="category-list" class="product-list category-list">
+            ${renderListaCategorias(categorias)}
+          </div>
+        </article>
+      </div>
 
       <article class="panel">
         <div class="list-header">
@@ -147,6 +241,16 @@ export function obterDadosFormularioProduto(form) {
     categoria: String(formData.get("categoria") ?? ""),
     estoque: String(formData.get("estoque") ?? ""),
   };
+}
+
+export function atualizarSelectCategorias(categorias, valorSelecionado = "") {
+  const select = document.querySelector("#product-category");
+
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML = renderOptionsCategorias(categorias, valorSelecionado);
 }
 
 const fieldConfig = {
@@ -244,4 +348,45 @@ export function preencherFormularioProduto(produto) {
   estoqueInput.value = produto.estoque ?? "";
   submitButton.textContent = "Salvar edicao";
   cancelButton.classList.remove("hidden");
+}
+
+export function preencherFormularioCategoria(nomeCategoria) {
+  const input = document.querySelector("#category-name");
+  const submitButton = document.querySelector("#submit-category");
+  const cancelButton = document.querySelector("#cancel-category-edit");
+
+  if (!input || !submitButton || !cancelButton) {
+    return;
+  }
+
+  aplicarErroCategoria("");
+
+  if (!nomeCategoria) {
+    input.value = "";
+    submitButton.textContent = "Adicionar Categoria";
+    cancelButton.classList.add("hidden");
+    return;
+  }
+
+  input.value = nomeCategoria;
+  submitButton.textContent = "Atualizar";
+  cancelButton.classList.remove("hidden");
+}
+
+export function aplicarErroCategoria(mensagem = "") {
+  const error = document.querySelector("#category-name-error");
+  const input = document.querySelector("#category-name");
+
+  if (!error || !input) {
+    return;
+  }
+
+  error.textContent = mensagem;
+
+  if (mensagem) {
+    input.setAttribute("aria-invalid", "true");
+    return;
+  }
+
+  input.removeAttribute("aria-invalid");
 }

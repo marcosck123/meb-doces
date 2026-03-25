@@ -115,3 +115,25 @@ export function removerProduto(id) {
 export function calcularTotal(lista = produtos) {
   return lista.reduce((total, produto) => total + produto.preco, 0);
 }
+
+export function atualizarCategoriaNosProdutos(categoriaAntiga, categoriaNova) {
+  produtos = produtos.map((produto) =>
+    produto.categoria === categoriaAntiga
+      ? { ...produto, categoria: categoriaNova }
+      : produto,
+  );
+  persistir();
+}
+
+export function limparCategoriaDosProdutos(categoria) {
+  produtos = produtos.map((produto) =>
+    produto.categoria === categoria
+      ? { ...produto, categoria: "" }
+      : produto,
+  );
+  persistir();
+}
+
+export function contarProdutosPorCategoria(categoria) {
+  return produtos.filter((produto) => produto.categoria === categoria).length;
+}

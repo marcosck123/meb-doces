@@ -1,4 +1,5 @@
 import type { AuthError } from "firebase/auth";
+import type { FirestoreError } from "firebase/firestore";
 
 export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -55,7 +56,7 @@ export function formatPhoneForFirestore(value: string) {
 }
 
 export function mapAuthError(error: unknown) {
-  const code = (error as AuthError | undefined)?.code;
+  const code = (error as AuthError | FirestoreError | undefined)?.code;
 
   switch (code) {
     case "auth/wrong-password":
@@ -67,10 +68,18 @@ export function mapAuthError(error: unknown) {
       return "Muitas tentativas. Tente novamente mais tarde";
     case "auth/email-already-in-use":
       return "E-mail já está em uso, tente outro";
+    case "auth/weak-password":
+      return "A senha informada e fraca demais";
+    case "auth/network-request-failed":
+      return "Falha de rede. Verifique sua conexão e tente novamente";
     case "auth/invalid-verification-code":
       return "Código incorreto, tente novamente";
     case "auth/invalid-phone-number":
       return "Número de telefone inválido";
+    case "permission-denied":
+      return "Sem permissão para salvar os dados. Verifique as regras do Firestore";
+    case "unavailable":
+      return "Serviço indisponível no momento. Tente novamente em instantes";
     default:
       return "Não foi possível concluir a autenticação. Tente novamente.";
   }

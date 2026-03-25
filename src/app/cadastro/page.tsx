@@ -2,6 +2,7 @@
 
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
 } from "firebase/auth";
 import { doc, query, where, getDocs, collection, serverTimestamp, setDoc } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
@@ -91,12 +92,20 @@ export default function CadastroPage() {
 
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
 
-      await setDoc(doc(db, "usuarios", credential.user.uid), {
-        username: usernameNormalized,
-        email: email.trim(),
-        telefone: null,
-        criadoEm: serverTimestamp(),
-      });
+      try {
+        await setDoc(doc(db, "usuarios", credential.user.uid), {
+          username: usernameNormalized,
+          email: email.trim(),
+          telefone: null,
+          criadoEm: serverTimestamp(),
+        });
+      } catch (profileError) {
+        await deleteUser(credential.user).catch(() => undefined);
+        setSubmitError(
+          `${mapAuthError(profileError)}. A conta nao foi finalizada porque o perfil nao pôde ser salvo.`,
+        );
+        return;
+      }
 
       router.replace("/dashboard");
     } catch (error) {

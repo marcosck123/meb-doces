@@ -2,7 +2,6 @@
 
 import { doc, getDoc } from "firebase/firestore";
 import { LogOut } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -44,11 +43,6 @@ export default function DashboardPage() {
     <AuthShell
       title="Dashboard"
       description="Sessão autenticada com persistência local ativa."
-      footer={
-        <Link className="text-cyan-200 hover:text-cyan-100" href="/verificar-telefone">
-          Atualizar telefone
-        </Link>
-      }
     >
       <div className="space-y-4 text-sm text-slate-200">
         <Badge variant="success">Usuário autenticado</Badge>

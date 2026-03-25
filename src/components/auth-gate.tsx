@@ -1,60 +1,36 @@
 "use client";
 
-import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
-import { db } from "@/lib/firebase";
 
 const AUTH_PAGES = new Set(["/login", "/cadastro"]);
 const PUBLIC_PATHS = new Set(["/", "/login", "/cadastro", "/verificar-telefone"]);
+const PHONE_STEP_KEY = "pending-phone-verification";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const { user, loading } = useAuth();
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [hasPhone, setHasPhone] = useState<boolean | null>(null);
+  const [phoneStepPending, setPhoneStepPending] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      setHasPhone(null);
-      setProfileLoading(false);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(PHONE_STEP_KEY);
+      }
+      setPhoneStepPending(false);
       return;
     }
 
-    let active = true;
-    setProfileLoading(true);
-
-    getDoc(doc(db, "usuarios", user.uid))
-      .then((snapshot) => {
-        if (!active) {
-          return;
-        }
-
-        setHasPhone(Boolean(snapshot.data()?.telefone));
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-
-        setHasPhone(false);
-      })
-      .finally(() => {
-        if (active) {
-          setProfileLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [user]);
+    if (typeof window !== "undefined") {
+      setPhoneStepPending(window.sessionStorage.getItem(PHONE_STEP_KEY) === "true");
+    }
+  }, [user, pathname]);
 
   useEffect(() => {
-    if (loading || profileLoading) {
+    if (loading) {
       return;
     }
 
@@ -73,19 +49,19 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     if (pathname === "/") {
-      router.replace(hasPhone ? "/dashboard" : "/verificar-telefone");
+      router.replace("/dashboard");
       return;
     }
 
-    if (!hasPhone && pathname !== "/verificar-telefone") {
-      router.replace("/verificar-telefone");
+    if (pathname === "/verificar-telefone" && !phoneStepPending) {
+      router.replace("/dashboard");
       return;
     }
 
-    if (hasPhone && (AUTH_PAGES.has(pathname) || pathname === "/verificar-telefone")) {
+    if (AUTH_PAGES.has(pathname)) {
       router.replace("/dashboard");
     }
-  }, [hasPhone, loading, pathname, profileLoading, router, user]);
+  }, [loading, pathname, phoneStepPending, router, user]);
 
   return <>{children}</>;
 }

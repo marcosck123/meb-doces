@@ -24,6 +24,7 @@ import {
 import { auth, db, ensureAuthPersistence } from "@/lib/firebase";
 
 type AvailabilityState = "idle" | "checking" | "available" | "unavailable";
+const PHONE_STEP_KEY = "pending-phone-verification";
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -131,6 +132,7 @@ export default function CadastroPage() {
         criadoEm: serverTimestamp(),
       });
 
+      window.sessionStorage.setItem(PHONE_STEP_KEY, "true");
       router.replace("/verificar-telefone");
     } catch {
       setSubmitError("Não foi possível concluir o cadastro. Tente novamente.");

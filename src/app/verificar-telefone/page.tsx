@@ -3,7 +3,6 @@
 import {
   linkWithPhoneNumber,
   RecaptchaVerifier,
-  signInWithPhoneNumber,
   type ConfirmationResult,
 } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
@@ -18,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { digitsOnly, formatPhoneForFirestore, mapAuthError } from "@/lib/auth";
 import { auth, db, ensureAuthPersistence } from "@/lib/firebase";
+
+const PHONE_STEP_KEY = "pending-phone-verification";
 
 declare global {
   interface Window {
@@ -111,9 +112,11 @@ export default function VerificarTelefonePage() {
       }
 
       const fullPhone = `+55${phoneDigits}`;
-      const result = user
-        ? await linkWithPhoneNumber(user, fullPhone, verifier)
-        : await signInWithPhoneNumber(auth, fullPhone, verifier);
+      if (!user) {
+        throw new Error("Sessão inválida. Faça o cadastro novamente.");
+      }
+
+      const result = await linkWithPhoneNumber(user, fullPhone, verifier);
 
       setConfirmationResult(result);
       setFeedback({ type: "success", message: "SMS enviado com sucesso ✓" });
@@ -142,6 +145,7 @@ export default function VerificarTelefonePage() {
         telefone: formatPhoneForFirestore(phone),
       });
 
+      window.sessionStorage.removeItem(PHONE_STEP_KEY);
       router.replace("/dashboard");
     } catch (error) {
       setFeedback({ type: "error", message: mapAuthError(error) });

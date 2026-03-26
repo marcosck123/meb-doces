@@ -1,107 +1,117 @@
 import { carregarLocalStorage, salvarLocalStorage } from "./storage.js";
-import {
-  atualizarCategoriaNosProdutos,
-  contarProdutosPorCategoria,
-  limparCategoriaDosProdutos,
-} from "./products.js";
+import { gerarId, normalizarChave, normalizarTexto } from "./utils.js";
 
-const STORAGE_KEY = "categorias";
+const STORAGE_PLATAFORMAS = "plataformas";
+const STORAGE_MERCADOS = "mercados";
 
-function normalizarCategoria(nome) {
-  return String(nome ?? "").trim();
+function normalizarPlataforma(plataforma = {}) {
+  return {
+    id: plataforma.id || gerarId(),
+    nome: normalizarTexto(plataforma.nome),
+    cobraTaxa: Boolean(plataforma.cobraTaxa),
+    taxa: plataforma.cobraTaxa ? Number(plataforma.taxa) || 0 : 0,
+  };
 }
 
-function obterChaveComparacao(nome) {
-  return normalizarCategoria(nome).toLocaleLowerCase("pt-BR");
+function normalizarMercado(mercado = {}) {
+  return {
+    id: mercado.id || gerarId(),
+    nome: normalizarTexto(mercado.nome),
+  };
 }
 
-let categorias = carregarLocalStorage(STORAGE_KEY, [])
-  .map(normalizarCategoria)
-  .filter(Boolean)
-  .filter((categoria, index, lista) => (
-    lista.findIndex((item) => obterChaveComparacao(item) === obterChaveComparacao(categoria)) === index
-  ));
+let plataformas = carregarLocalStorage(STORAGE_PLATAFORMAS, []).map(normalizarPlataforma);
+let mercados = carregarLocalStorage(STORAGE_MERCADOS, []).map(normalizarMercado);
 
-function persistir() {
-  salvarLocalStorage(STORAGE_KEY, categorias);
+function persistirPlataformas() {
+  salvarLocalStorage(STORAGE_PLATAFORMAS, plataformas);
 }
 
-export function carregarCategorias() {
-  return [...categorias];
+function persistirMercados() {
+  salvarLocalStorage(STORAGE_MERCADOS, mercados);
 }
 
-export function salvarCategorias() {
-  persistir();
+function validarNomeDuplicado(lista, nome, idIgnorado = "") {
+  const chave = normalizarChave(nome);
+  return lista.some((item) => normalizarChave(item.nome) === chave && item.id !== idIgnorado);
 }
 
-export function listarCategorias() {
-  return [...categorias];
+export function listarPlataformas() {
+  return [...plataformas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
-export function existeCategoriaDuplicada(nome, ignorarNome = "") {
-  const chave = obterChaveComparacao(nome);
-  const chaveIgnorada = obterChaveComparacao(ignorarNome);
+export function listarMercados() {
+  return [...mercados].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
 
-  return categorias.some((categoria) => {
-    const chaveCategoria = obterChaveComparacao(categoria);
-    return chaveCategoria === chave && chaveCategoria !== chaveIgnorada;
+export function obterPlataformaPorId(id) {
+  return plataformas.find((plataforma) => plataforma.id === id) ?? null;
+}
+
+export function obterMercadoPorId(id) {
+  return mercados.find((mercado) => mercado.id === id) ?? null;
+}
+
+export function salvarPlataforma({ id, nome, cobraTaxa, taxa }) {
+  const nomeNormalizado = normalizarTexto(nome);
+
+  if (!nomeNormalizado) {
+    throw new Error("Informe o nome da plataforma.");
+  }
+
+  if (validarNomeDuplicado(plataformas, nomeNormalizado, id)) {
+    throw new Error("Ja existe uma plataforma com esse nome.");
+  }
+
+  if (cobraTaxa && !(Number(taxa) >= 0)) {
+    throw new Error("Informe a taxa da plataforma.");
+  }
+
+  const plataforma = normalizarPlataforma({
+    id: id || gerarId(),
+    nome: nomeNormalizado,
+    cobraTaxa,
+    taxa,
   });
+
+  plataformas = id
+    ? plataformas.map((item) => (item.id === id ? plataforma : item))
+    : [plataforma, ...plataformas];
+
+  persistirPlataformas();
+  return plataforma;
 }
 
-export function adicionarCategoria(nome) {
-  const categoria = normalizarCategoria(nome);
-
-  if (categoria.length < 3) {
-    throw new Error("Informe uma categoria com ao menos 3 caracteres.");
-  }
-
-  if (existeCategoriaDuplicada(categoria)) {
-    throw new Error("Ja existe uma categoria com esse nome.");
-  }
-
-  categorias = [...categorias, categoria].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  persistir();
-
-  return categoria;
+export function excluirPlataforma(id) {
+  plataformas = plataformas.filter((plataforma) => plataforma.id !== id);
+  persistirPlataformas();
 }
 
-export function editarCategoria(nomeAtual, novoNome) {
-  const categoriaAtual = normalizarCategoria(nomeAtual);
-  const categoriaNova = normalizarCategoria(novoNome);
+export function salvarMercado({ id, nome }) {
+  const nomeNormalizado = normalizarTexto(nome);
 
-  if (!categoriaAtual) {
-    throw new Error("Categoria nao encontrada.");
+  if (!nomeNormalizado) {
+    throw new Error("Informe o nome do mercado.");
   }
 
-  if (categoriaNova.length < 3) {
-    throw new Error("Informe uma categoria com ao menos 3 caracteres.");
+  if (validarNomeDuplicado(mercados, nomeNormalizado, id)) {
+    throw new Error("Ja existe um mercado com esse nome.");
   }
 
-  if (existeCategoriaDuplicada(categoriaNova, categoriaAtual)) {
-    throw new Error("Ja existe uma categoria com esse nome.");
-  }
+  const mercado = normalizarMercado({
+    id: id || gerarId(),
+    nome: nomeNormalizado,
+  });
 
-  categorias = categorias
-    .map((categoria) => (categoria === categoriaAtual ? categoriaNova : categoria))
-    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  mercados = id
+    ? mercados.map((item) => (item.id === id ? mercado : item))
+    : [mercado, ...mercados];
 
-  atualizarCategoriaNosProdutos(categoriaAtual, categoriaNova);
-  persistir();
-
-  return categoriaNova;
+  persistirMercados();
+  return mercado;
 }
 
-export function removerCategoria(nome) {
-  const categoria = normalizarCategoria(nome);
-
-  categorias = categorias.filter((item) => item !== categoria);
-  limparCategoriaDosProdutos(categoria);
-  persistir();
-}
-
-export function obterResumoCategorias() {
-  return categorias.map((categoria) => ({
-    nome: categoria,
-    quantidadeProdutos: contarProdutosPorCategoria(categoria),
-  }));
+export function excluirMercado(id) {
+  mercados = mercados.filter((mercado) => mercado.id !== id);
+  persistirMercados();
 }

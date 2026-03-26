@@ -15,3 +15,7 @@ export function carregarLocalStorage(chave, valorPadrao) {
     return valorPadrao;
   }
 }
+
+export function removerLocalStorage(chave) {
+  localStorage.removeItem(chave);
+}

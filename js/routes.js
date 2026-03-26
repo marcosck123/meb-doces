@@ -1,5 +1,8 @@
-import { bindProdutosEvents, renderProdutos } from "../pages/produtos.js";
-import { renderHome } from "../pages/home.js";
+import { bindProdutosEvents, renderProdutos } from "../src/pages/produtos.js";
+import { renderHome } from "../src/pages/home.js";
+import { bindPlataformasEvents, renderPlataformas } from "../src/pages/plataformas.js";
+import { bindMercadosEvents, renderMercados } from "../src/pages/mercados.js";
+import { bindVendasEvents, renderVendas } from "../src/pages/vendas.js";
 import { renderNoApp, atualizarBotaoAtivo } from "./ui.js";
 
 const rotas = {
@@ -9,11 +12,26 @@ const rotas = {
       document.querySelectorAll("[data-go-products]").forEach((botao) => {
         botao.addEventListener("click", () => irPara("produtos"));
       });
+      document.querySelectorAll("[data-go-sales]").forEach((botao) => {
+        botao.addEventListener("click", () => irPara("vendas"));
+      });
     },
   },
   produtos: {
     render: renderProdutos,
     afterRender: bindProdutosEvents,
+  },
+  plataformas: {
+    render: renderPlataformas,
+    afterRender: bindPlataformasEvents,
+  },
+  mercados: {
+    render: renderMercados,
+    afterRender: bindMercadosEvents,
+  },
+  vendas: {
+    render: renderVendas,
+    afterRender: bindVendasEvents,
   },
 };
 

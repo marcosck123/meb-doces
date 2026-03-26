@@ -1,19 +1,19 @@
 import { carregarLocalStorage, salvarLocalStorage } from "./storage.js";
-import { gerarId } from "./utils.js";
+import { gerarId, normalizarChave, normalizarTexto, parseNumeroOpcional } from "./utils.js";
 
-const STORAGE_KEY = "crud_produtos";
+const STORAGE_KEY = "produtos";
 
-function normalizarProdutoPersistido(produto) {
+function normalizarProdutoPersistido(produto = {}) {
   return {
-    ...produto,
-    nome: typeof produto.nome === "string" ? produto.nome.trim() : "",
-    preco: Number(produto.preco) || 0,
-    categoria: typeof produto.categoria === "string" ? produto.categoria.trim() : "",
-    estoque:
-      produto.estoque === undefined || produto.estoque === null || produto.estoque === ""
-        ? undefined
-        : Number(produto.estoque),
-    criadoEm: Number(produto.criadoEm) || Date.now(),
+    id: produto.id || gerarId(),
+    nome: normalizarTexto(produto.nome),
+    quantidadeEstoque: Number(produto.quantidadeEstoque) || 0,
+    unidade: normalizarTexto(produto.unidade),
+    custoMedio: Number(produto.custoMedio) || 0,
+    ultimaEntradaValor: Number(produto.ultimaEntradaValor) || 0,
+    ultimoMercado: normalizarTexto(produto.ultimoMercado),
+    criadoEm: produto.criadoEm || new Date().toISOString(),
+    atualizadoEm: produto.atualizadoEm || new Date().toISOString(),
   };
 }
 
@@ -23,59 +23,44 @@ function persistir() {
   salvarLocalStorage(STORAGE_KEY, produtos);
 }
 
+function compararNome(nomeA, nomeB) {
+  return normalizarChave(nomeA) === normalizarChave(nomeB);
+}
+
 export function listarProdutos() {
-  return [...produtos];
-}
-
-export function buscarProdutos(termo = "") {
-  const busca = termo.trim().toLowerCase();
-
-  if (!busca) {
-    return listarProdutos();
-  }
-
-  return produtos.filter((produto) =>
-    produto.nome.toLowerCase().includes(busca),
-  );
-}
-
-export function ordenarProdutos(lista, criterio = "recentes") {
-  const produtosOrdenados = [...lista];
-
-  switch (criterio) {
-    case "menor-preco":
-      produtosOrdenados.sort((a, b) => a.preco - b.preco);
-      break;
-    case "maior-preco":
-      produtosOrdenados.sort((a, b) => b.preco - a.preco);
-      break;
-    case "nome":
-      produtosOrdenados.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-      break;
-    default:
-      produtosOrdenados.sort((a, b) => b.criadoEm - a.criadoEm);
-  }
-
-  return produtosOrdenados;
-}
-
-export function obterProdutosFiltrados({ busca = "", ordenacao = "recentes" } = {}) {
-  return ordenarProdutos(buscarProdutos(busca), ordenacao);
+  return [...produtos].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 export function obterProdutoPorId(id) {
   return produtos.find((produto) => produto.id === id) ?? null;
 }
 
-export function adicionarProduto({ nome, preco, categoria, estoque }) {
-  const produto = {
+export function obterProdutoPorNome(nome) {
+  return produtos.find((produto) => compararNome(produto.nome, nome)) ?? null;
+}
+
+export function buscarProdutos(termo = "") {
+  const busca = normalizarChave(termo);
+
+  if (!busca) {
+    return listarProdutos();
+  }
+
+  return listarProdutos().filter((produto) => normalizarChave(produto.nome).includes(busca));
+}
+
+export function criarProduto({ nome, unidade = "", quantidadeEstoque = 0, custoMedio = 0, ultimoMercado = "" }) {
+  const produto = normalizarProdutoPersistido({
     id: gerarId(),
-    nome: nome.trim(),
-    preco: Number(preco),
-    categoria: categoria?.trim() ?? "",
-    estoque: estoque === undefined ? undefined : Number(estoque),
-    criadoEm: Date.now(),
-  };
+    nome,
+    unidade,
+    quantidadeEstoque,
+    custoMedio,
+    ultimaEntradaValor: custoMedio,
+    ultimoMercado,
+    criadoEm: new Date().toISOString(),
+    atualizadoEm: new Date().toISOString(),
+  });
 
   produtos = [produto, ...produtos];
   persistir();
@@ -83,25 +68,30 @@ export function adicionarProduto({ nome, preco, categoria, estoque }) {
   return produto;
 }
 
-export function editarProduto(id, dadosAtualizados) {
+export function criarOuObterProduto({ nome, unidade = "", quantidadeEstoque = 0, custoMedio = 0, ultimoMercado = "" }) {
+  const existente = obterProdutoPorNome(nome);
+
+  if (existente) {
+    return existente;
+  }
+
+  return criarProduto({ nome, unidade, quantidadeEstoque, custoMedio, ultimoMercado });
+}
+
+export function atualizarProduto(id, dadosAtualizados) {
   const produtoAtual = obterProdutoPorId(id);
 
   if (!produtoAtual) {
     return null;
   }
 
-  const produtoAtualizado = {
+  const produtoAtualizado = normalizarProdutoPersistido({
     ...produtoAtual,
     ...dadosAtualizados,
-    nome: dadosAtualizados.nome.trim(),
-    preco: Number(dadosAtualizados.preco),
-    categoria: dadosAtualizados.categoria?.trim() ?? "",
-    estoque: dadosAtualizados.estoque === undefined ? undefined : Number(dadosAtualizados.estoque),
-  };
+    atualizadoEm: new Date().toISOString(),
+  });
 
-  produtos = produtos.map((produto) =>
-    produto.id === id ? produtoAtualizado : produto,
-  );
+  produtos = produtos.map((produto) => (produto.id === id ? produtoAtualizado : produto));
   persistir();
 
   return produtoAtualizado;
@@ -112,28 +102,52 @@ export function removerProduto(id) {
   persistir();
 }
 
-export function calcularTotal(lista = produtos) {
-  return lista.reduce((total, produto) => total + produto.preco, 0);
+export function registrarEntradaNoProduto({
+  produtoId,
+  nomeProduto,
+  valorPago,
+  quantidade,
+  unidade = "",
+  mercado = "",
+}) {
+  const valor = Number(valorPago);
+  const quantidadeInformada = parseNumeroOpcional(quantidade);
+  const quantidadeEntrada = quantidadeInformada && quantidadeInformada > 0 ? quantidadeInformada : 1;
+
+  let produto = produtoId ? obterProdutoPorId(produtoId) : null;
+
+  if (!produto && nomeProduto) {
+    produto = criarOuObterProduto({
+      nome: nomeProduto,
+      unidade,
+      quantidadeEstoque: 0,
+      custoMedio: 0,
+      ultimoMercado: mercado,
+    });
+  }
+
+  if (!produto) {
+    throw new Error("Produto nao encontrado.");
+  }
+
+  const quantidadeAtual = Number(produto.quantidadeEstoque) || 0;
+  const custoAtualTotal = (Number(produto.custoMedio) || 0) * quantidadeAtual;
+  const novaQuantidade = quantidadeAtual + quantidadeEntrada;
+  const novoCustoMedio = novaQuantidade > 0 ? (custoAtualTotal + valor) / novaQuantidade : valor;
+
+  return atualizarProduto(produto.id, {
+    unidade: unidade || produto.unidade,
+    quantidadeEstoque: novaQuantidade,
+    custoMedio: novoCustoMedio,
+    ultimaEntradaValor: valor,
+    ultimoMercado: mercado || produto.ultimoMercado,
+  });
 }
 
-export function atualizarCategoriaNosProdutos(categoriaAntiga, categoriaNova) {
-  produtos = produtos.map((produto) =>
-    produto.categoria === categoriaAntiga
-      ? { ...produto, categoria: categoriaNova }
-      : produto,
-  );
-  persistir();
+export function calcularValorTotalEstoque(lista = produtos) {
+  return lista.reduce((total, produto) => total + (Number(produto.custoMedio) || 0) * (Number(produto.quantidadeEstoque) || 0), 0);
 }
 
-export function limparCategoriaDosProdutos(categoria) {
-  produtos = produtos.map((produto) =>
-    produto.categoria === categoria
-      ? { ...produto, categoria: "" }
-      : produto,
-  );
-  persistir();
-}
-
-export function contarProdutosPorCategoria(categoria) {
-  return produtos.filter((produto) => produto.categoria === categoria).length;
+export function contarProdutosBaixoEstoque(limite = 3) {
+  return produtos.filter((produto) => Number(produto.quantidadeEstoque) > 0 && Number(produto.quantidadeEstoque) <= limite).length;
 }

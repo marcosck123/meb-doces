@@ -1,9 +1,28 @@
+import { obterCarteira, obterCartaoInfo, atualizarCartaoInfo } from "./carteira.js";
+import { escapeHtml, formatarDataHora, formatarMoeda } from "./utils.js";
 import { carregarLocalStorage, salvarLocalStorage } from "./storage.js";
-import { renderProductCard } from "../components/card.js";
-import { calcularTotal } from "./products.js";
-import { escapeHtml, formatarMoeda } from "./utils.js";
 
 const THEME_KEY = "crud_tema";
+let modalAtual = null;
+let walletPopupAberto = false;
+
+function garantirModalRoot() {
+  let root = document.querySelector("#modal-root");
+
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "modal-root";
+    document.body.appendChild(root);
+  }
+
+  return root;
+}
+
+function fecharModalPorEsc(event) {
+  if (event.key === "Escape") {
+    fecharModal();
+  }
+}
 
 export function renderNoApp(html) {
   const app = document.querySelector("#app");
@@ -49,344 +68,356 @@ export function setButtonLoading(botao, carregando, textoPadrao, textoLoading) {
   botao.textContent = carregando ? textoLoading : textoPadrao;
 }
 
-function renderOptionsCategorias(categorias, categoriaSelecionada = "") {
-  return [
-    '<option value="">Sem categoria</option>',
-    ...categorias.map((categoria) => `
-      <option value="${escapeHtml(categoria)}" ${categoria === categoriaSelecionada ? "selected" : ""}>${escapeHtml(categoria)}</option>
-    `),
-  ].join("");
-}
+export function abrirModal({ titulo, descricao = "", conteudo, largura = "560px", onOpen } = {}) {
+  fecharModal();
 
-export function renderFormularioProduto(editando = false, categorias = []) {
-  return `
-    <form id="product-form" class="form-fields" novalidate>
-      <div class="field-group" data-field="nome">
-        <label for="product-name">Nome do produto</label>
-        <input id="product-name" name="nome" type="text" placeholder="Ex: Notebook gamer" autocomplete="off" />
-        <p class="field-error" id="product-name-error" aria-live="polite"></p>
-      </div>
+  const root = garantirModalRoot();
 
-      <div class="field-group" data-field="preco">
-        <label for="product-price">Preco</label>
-        <input id="product-price" name="preco" type="number" min="0.01" step="0.01" placeholder="Ex: 2999.90" />
-        <p class="field-error" id="product-price-error" aria-live="polite"></p>
-      </div>
-
-      <div class="field-group" data-field="categoria">
-        <label for="product-category">Categoria</label>
-        <select id="product-category" name="categoria">
-          ${renderOptionsCategorias(categorias)}
-        </select>
-        <p class="field-error" id="product-category-error" aria-live="polite"></p>
-      </div>
-
-      <div class="field-group" data-field="estoque">
-        <label for="product-stock">Quantidade em estoque</label>
-        <input id="product-stock" name="estoque" type="number" min="0" step="1" placeholder="Ex: 12" />
-        <p class="field-error" id="product-stock-error" aria-live="polite"></p>
-      </div>
-
-      <div class="form-actions">
-        <button id="submit-product" class="button button-primary" type="submit">${editando ? "Salvar edicao" : "Salvar"}</button>
-        <button id="cancel-edit" class="button button-secondary ${editando ? "" : "hidden"}" type="button">
-          Cancelar edicao
-        </button>
-      </div>
-    </form>
-  `;
-}
-
-export function renderFormularioCategoria(editando = false) {
-  return `
-    <form id="category-form" class="form-fields category-form" novalidate>
-      <div class="field-group">
-        <label for="category-name">Nome da categoria</label>
-        <input id="category-name" name="nome-categoria" type="text" placeholder="Ex: Doces" autocomplete="off" />
-        <p class="field-error" id="category-name-error" aria-live="polite"></p>
-      </div>
-
-      <div class="form-actions">
-        <button id="submit-category" class="button button-primary" type="submit">${editando ? "Atualizar" : "Adicionar Categoria"}</button>
-        <button id="cancel-category-edit" class="button button-secondary ${editando ? "" : "hidden"}" type="button">
-          Cancelar
-        </button>
-      </div>
-    </form>
-  `;
-}
-
-export function renderListaProdutos(lista) {
-  if (!lista.length) {
-    return `
-      <div class="empty-state">
-        <p>Nenhum produto cadastrado ainda.</p>
-        <button class="button button-secondary" type="button" data-create-first>Criar primeiro produto</button>
-      </div>
-    `;
-  }
-
-  return lista.map(renderProductCard).join("");
-}
-
-export function renderListaCategorias(categorias) {
-  if (!categorias.length) {
-    return `
-      <div class="empty-state">
-        <p>Nenhuma categoria cadastrada.</p>
-      </div>
-    `;
-  }
-
-  return categorias.map((categoria) => `
-    <article class="category-card">
-      <div>
-        <h3 class="product-name">${escapeHtml(categoria.nome)}</h3>
-        <div class="product-meta">
-          <span>${categoria.quantidadeProdutos} produto(s)</span>
-        </div>
-      </div>
-
-      <div class="action-group">
-        <button
-          class="action-button action-edit category-icon-button"
-          type="button"
-          data-category-action="editar"
-          data-category-name="${escapeHtml(categoria.nome)}"
-          aria-label="Editar categoria ${escapeHtml(categoria.nome)}"
-        >
-          &#9998;
-        </button>
-        <button
-          class="action-button action-delete category-icon-button"
-          type="button"
-          data-category-action="remover"
-          data-category-name="${escapeHtml(categoria.nome)}"
-          aria-label="Excluir categoria ${escapeHtml(categoria.nome)}"
-        >
-          &#128465;
-        </button>
-      </div>
-    </article>
-  `).join("");
-}
-
-export function renderPaginaProdutos({
-  lista,
-  busca,
-  ordenacao,
-  editando,
-  categorias,
-  editandoCategoria,
-}) {
-  return `
-    <section class="page-grid products-layout">
-      <div class="stack-layout">
-        <article class="panel">
+  root.innerHTML = `
+    <div class="modal-backdrop" data-modal-backdrop>
+      <section class="modal-dialog" style="--modal-width: ${largura};" role="dialog" aria-modal="true" aria-label="${escapeHtml(titulo || "Modal")}">
+        <header class="modal-header">
           <div>
-            <h1 class="section-title">Cadastro de produtos</h1>
-            <p class="panel-subtitle">Formulario validado com Zod, feedback imediato e persistencia local automatica.</p>
+            <h2 class="section-title">${escapeHtml(titulo || "Modal")}</h2>
+            ${descricao ? `<p class="panel-subtitle">${escapeHtml(descricao)}</p>` : ""}
           </div>
-
-          ${renderFormularioProduto(editando, categorias.map((categoria) => categoria.nome))}
-
-          <p class="helper-text">Os dados ficam salvos no navegador usando localStorage.</p>
-        </article>
-
-        <article class="panel">
-          <div>
-            <h2 class="section-title">Gerenciar Categorias</h2>
-            <p class="panel-subtitle">CRUD completo de categorias com integracao direta aos produtos.</p>
-          </div>
-
-          ${renderFormularioCategoria(editandoCategoria)}
-
-          <div id="category-list" class="product-list category-list">
-            ${renderListaCategorias(categorias)}
-          </div>
-        </article>
-      </div>
-
-      <article class="panel">
-        <div class="list-header">
-          <div>
-            <h2 class="section-title">Lista de produtos</h2>
-            <p class="panel-subtitle">Busca em tempo real, ordenacao, atualizacao imediata e cards com dados completos.</p>
-          </div>
-          <span class="total-badge">Total: <strong id="total-price">${formatarMoeda(calcularTotal(lista))}</strong></span>
-        </div>
-
-        <div class="toolbar">
-          <input id="search-product" type="text" placeholder="Buscar por nome..." value="${busca}" />
-          <select id="sort-products" aria-label="Ordenar produtos">
-            <option value="recentes" ${ordenacao === "recentes" ? "selected" : ""}>Mais recentes</option>
-            <option value="menor-preco" ${ordenacao === "menor-preco" ? "selected" : ""}>Menor preco</option>
-            <option value="maior-preco" ${ordenacao === "maior-preco" ? "selected" : ""}>Maior preco</option>
-            <option value="nome" ${ordenacao === "nome" ? "selected" : ""}>Nome</option>
-          </select>
-        </div>
-
-        <div id="product-list" class="product-list">${renderListaProdutos(lista)}</div>
-      </article>
-    </section>
+          <button class="icon-button" type="button" data-modal-close aria-label="Fechar modal">×</button>
+        </header>
+        <div class="modal-body">${conteudo || ""}</div>
+      </section>
+    </div>
   `;
-}
 
-export function obterDadosFormularioProduto(form) {
-  const formData = new FormData(form);
-
-  return {
-    nome: String(formData.get("nome") ?? ""),
-    preco: String(formData.get("preco") ?? ""),
-    categoria: String(formData.get("categoria") ?? ""),
-    estoque: String(formData.get("estoque") ?? ""),
-  };
-}
-
-export function atualizarSelectCategorias(categorias, valorSelecionado = "") {
-  const select = document.querySelector("#product-category");
-
-  if (!select) {
-    return;
-  }
-
-  select.innerHTML = renderOptionsCategorias(categorias, valorSelecionado);
-}
-
-const fieldConfig = {
-  nome: {
-    container: '[data-field="nome"]',
-    input: "#product-name",
-    error: "#product-name-error",
-  },
-  preco: {
-    container: '[data-field="preco"]',
-    input: "#product-price",
-    error: "#product-price-error",
-  },
-  categoria: {
-    container: '[data-field="categoria"]',
-    input: "#product-category",
-    error: "#product-category-error",
-  },
-  estoque: {
-    container: '[data-field="estoque"]',
-    input: "#product-stock",
-    error: "#product-stock-error",
-  },
-};
-
-export function limparErrosFormularioProduto(campos = Object.keys(fieldConfig)) {
-  campos.forEach((campo) => {
-    const config = fieldConfig[campo];
-
-    if (!config) {
-      return;
+  modalAtual = root.querySelector(".modal-backdrop");
+  modalAtual?.addEventListener("click", (event) => {
+    if (event.target.matches("[data-modal-backdrop]")) {
+      fecharModal();
     }
+  });
 
-    const container = document.querySelector(config.container);
-    const input = document.querySelector(config.input);
-    const error = document.querySelector(config.error);
+  root.querySelector("[data-modal-close]")?.addEventListener("click", () => fecharModal());
+  document.addEventListener("keydown", fecharModalPorEsc);
+  onOpen?.(root);
+}
 
-    container?.classList.remove("has-error");
-    input?.removeAttribute("aria-invalid");
+export function fecharModal() {
+  const root = document.querySelector("#modal-root");
 
-    if (error) {
-      error.textContent = "";
-    }
+  if (root) {
+    root.innerHTML = "";
+  }
+
+  modalAtual = null;
+  document.removeEventListener("keydown", fecharModalPorEsc);
+}
+
+export function limparErrosFormulario(form) {
+  form?.querySelectorAll(".field-group.has-error").forEach((campo) => {
+    campo.classList.remove("has-error");
+  });
+
+  form?.querySelectorAll("[aria-invalid='true']").forEach((input) => {
+    input.removeAttribute("aria-invalid");
+  });
+
+  form?.querySelectorAll("[data-error-for]").forEach((erro) => {
+    erro.textContent = "";
   });
 }
 
-export function aplicarErrosFormularioProduto(erros) {
+export function aplicarErrosFormulario(form, erros = {}) {
   Object.entries(erros).forEach(([campo, mensagem]) => {
-    const config = fieldConfig[campo];
+    const grupo = form?.querySelector(`[data-field="${campo}"]`);
+    const erro = form?.querySelector(`[data-error-for="${campo}"]`);
+    const input = grupo?.querySelector("input, select, textarea");
 
-    if (!config) {
-      return;
-    }
-
-    const container = document.querySelector(config.container);
-    const input = document.querySelector(config.input);
-    const error = document.querySelector(config.error);
-
-    container?.classList.add("has-error");
+    grupo?.classList.add("has-error");
     input?.setAttribute("aria-invalid", "true");
 
-    if (error) {
-      error.textContent = mensagem;
+    if (erro) {
+      erro.textContent = mensagem;
     }
   });
 }
 
-export function preencherFormularioProduto(produto) {
-  const nomeInput = document.querySelector("#product-name");
-  const precoInput = document.querySelector("#product-price");
-  const categoriaInput = document.querySelector("#product-category");
-  const estoqueInput = document.querySelector("#product-stock");
-  const submitButton = document.querySelector("#submit-product");
-  const cancelButton = document.querySelector("#cancel-edit");
+function renderCarteiraPopup() {
+  const carteira = obterCarteira();
+  const info = obterCartaoInfo();
+  const transacoes = carteira.transacoes.slice(0, 8);
 
-  if (!nomeInput || !precoInput || !categoriaInput || !estoqueInput || !submitButton || !cancelButton) {
-    return;
-  }
+  return `
+    <div class="wallet-backdrop" data-wallet-close>
+      <aside class="wallet-popup" aria-label="Carteira">
+        <div class="wallet-popup-header">
+          <div>
+            <h2 class="section-title">Carteira</h2>
+            <p class="panel-subtitle">Banco e caixa centralizados em um cartao interativo.</p>
+          </div>
+          <button class="icon-button" type="button" data-wallet-dismiss aria-label="Fechar carteira">×</button>
+        </div>
 
-  limparErrosFormularioProduto();
+        <div class="wallet-card-scene ${walletPopupAberto ? "" : ""}">
+          <div class="wallet-card" id="wallet-card">
+            <div class="wallet-face wallet-face-front">
+              <div class="wallet-brand-row">
+                <div>
+                  <p class="wallet-mini-label">Negocio</p>
+                  <h3>${escapeHtml(info.nomeNegocio || "Minha Empresa")}</h3>
+                </div>
+                <div class="wallet-chip" aria-hidden="true"></div>
+              </div>
 
-  if (!produto) {
-    nomeInput.value = "";
-    precoInput.value = "";
-    categoriaInput.value = "";
-    estoqueInput.value = "";
-    submitButton.textContent = "Salvar";
-    cancelButton.classList.add("hidden");
-    return;
-  }
+              <div class="wallet-balance-wrap">
+                <span class="wallet-mini-label">Saldo total</span>
+                <button class="wallet-total-button" type="button" id="wallet-balance-trigger">
+                  ${formatarMoeda(carteira.saldoTotal)}
+                </button>
+                <div class="wallet-balance-tooltip" id="wallet-balance-tooltip">
+                  <span>🏦 Banco: ${formatarMoeda(carteira.banco)}</span>
+                  <span>💵 Caixa: ${formatarMoeda(carteira.caixa)}</span>
+                </div>
+              </div>
 
-  nomeInput.value = produto.nome;
-  precoInput.value = produto.preco;
-  categoriaInput.value = produto.categoria ?? "";
-  estoqueInput.value = produto.estoque ?? "";
-  submitButton.textContent = "Salvar edicao";
-  cancelButton.classList.remove("hidden");
+              <div class="wallet-card-actions">
+                <button class="button button-primary" type="button" data-wallet-action="entrada">+ Registrar Entrada</button>
+                <button class="button button-secondary" type="button" data-wallet-action="saida">- Registrar Saida</button>
+              </div>
+
+              <button class="wallet-flip-button" type="button" data-wallet-flip="back">Virar cartao</button>
+            </div>
+
+            <div class="wallet-face wallet-face-back">
+              <div class="wallet-back-fields">
+                <div class="editable-row"><span class="wallet-mini-label">Nome do negocio</span><span class="editable-value" data-editable="nomeNegocio">${escapeHtml(info.nomeNegocio)}</span></div>
+                <div class="editable-row"><span class="wallet-mini-label">Responsavel</span><span class="editable-value" data-editable="responsavel">${escapeHtml(info.responsavel)}</span></div>
+                <div class="editable-row"><span class="wallet-mini-label">CNPJ ou CPF</span><span class="editable-value" data-editable="documento">${escapeHtml(info.documento || "Clique para editar")}</span></div>
+                <div class="editable-row"><span class="wallet-mini-label">Telefone</span><span class="editable-value" data-editable="telefone">${escapeHtml(info.telefone || "Clique para editar")}</span></div>
+                <div class="editable-row"><span class="wallet-mini-label">Observacoes</span><span class="editable-value" data-editable="observacoes">${escapeHtml(info.observacoes || "Clique para editar")}</span></div>
+              </div>
+              <button class="wallet-flip-button" type="button" data-wallet-flip="front">Voltar</button>
+            </div>
+          </div>
+        </div>
+
+        <section class="wallet-transactions">
+          <div class="section-header">
+            <h3 class="section-title">Ultimas transacoes</h3>
+            <span class="total-badge">${transacoes.length} registro(s)</span>
+          </div>
+          <div class="wallet-transaction-list">
+            ${transacoes.length
+              ? transacoes.map((transacao) => `
+                  <article class="wallet-transaction-item">
+                    <div>
+                      <strong>${escapeHtml(transacao.categoria)}</strong>
+                      <p>${escapeHtml(transacao.descricao || "Sem descricao")}</p>
+                    </div>
+                    <div class="wallet-transaction-side">
+                      <strong class="${transacao.tipo === "saida" ? "text-danger" : "text-accent"}">${transacao.tipo === "saida" ? "-" : "+"}${formatarMoeda(transacao.valor)}</strong>
+                      <span>${escapeHtml(transacao.bolso)} · ${escapeHtml(formatarDataHora(transacao.data))}</span>
+                    </div>
+                  </article>
+                `).join("")
+              : '<div class="empty-state"><p>Nenhuma transacao registrada.</p></div>'}
+          </div>
+        </section>
+      </aside>
+    </div>
+  `;
 }
 
-export function preencherFormularioCategoria(nomeCategoria) {
-  const input = document.querySelector("#category-name");
-  const submitButton = document.querySelector("#submit-category");
-  const cancelButton = document.querySelector("#cancel-category-edit");
+function abrirEditorInline(elemento) {
+  const campo = elemento.dataset.editable;
+  const valorAtual = elemento.textContent === "Clique para editar" ? "" : elemento.textContent;
+  const input = document.createElement("input");
 
-  if (!input || !submitButton || !cancelButton) {
-    return;
-  }
+  input.type = "text";
+  input.value = valorAtual;
+  input.className = "inline-edit-input";
+  elemento.replaceWith(input);
+  input.focus();
+  input.select();
 
-  aplicarErroCategoria("");
+  const salvar = () => {
+    atualizarCartaoInfo(campo, input.value);
+    atualizarCarteiraPopupSeAberto();
+  };
 
-  if (!nomeCategoria) {
-    input.value = "";
-    submitButton.textContent = "Adicionar Categoria";
-    cancelButton.classList.add("hidden");
-    return;
-  }
-
-  input.value = nomeCategoria;
-  submitButton.textContent = "Atualizar";
-  cancelButton.classList.remove("hidden");
+  input.addEventListener("blur", salvar, { once: true });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      input.blur();
+    }
+  });
 }
 
-export function aplicarErroCategoria(mensagem = "") {
-  const error = document.querySelector("#category-name-error");
-  const input = document.querySelector("#category-name");
+function renderModalCarteira(tipo) {
+  const configuracao = tipo === "saida"
+    ? {
+        titulo: "Registrar Saida",
+        submit: "Registrar Saida",
+        categoriaLabel: "Motivo da saida",
+        categoriaName: "categoria",
+        categorias: [
+          "Emergencia",
+          "Compra de Insumo/Ingrediente",
+          "Despesa Operacional",
+          "Retirada dos Proprietarios",
+          "Outro",
+        ],
+        bolsoLabel: "Origem",
+      }
+    : {
+        titulo: "Registrar Entrada",
+        submit: "Registrar Entrada",
+        categoriaLabel: "Tipo de entrada",
+        categoriaName: "categoria",
+        categorias: [
+          "Venda de Produto",
+          "Entrada de Dinheiro em Caixa (papel)",
+          "Investimento pelos Proprietarios",
+          "Outro",
+        ],
+        bolsoLabel: "Destino",
+      };
 
-  if (!error || !input) {
-    return;
+  return `
+    <form id="wallet-form" class="form-fields" novalidate data-wallet-form-type="${tipo}">
+      <div class="field-group" data-field="categoria">
+        <label for="wallet-category">${configuracao.categoriaLabel}</label>
+        <select id="wallet-category" name="categoria">
+          <option value="">Selecione</option>
+          ${configuracao.categorias.map((categoria) => `<option value="${escapeHtml(categoria)}">${escapeHtml(categoria)}</option>`).join("")}
+        </select>
+        <p class="field-error" data-error-for="categoria"></p>
+      </div>
+
+      <div class="field-group hidden" data-field="categoriaOutro">
+        <label for="wallet-category-other">Descreva o motivo</label>
+        <input id="wallet-category-other" name="categoriaOutro" type="text" />
+        <p class="field-error" data-error-for="categoriaOutro"></p>
+      </div>
+
+      <div class="field-group" data-field="valor">
+        <label for="wallet-value">Valor (R$)</label>
+        <input id="wallet-value" name="valor" type="text" inputmode="decimal" placeholder="Ex: 150,00" />
+        <p class="field-error" data-error-for="valor"></p>
+      </div>
+
+      <div class="field-group" data-field="bolso">
+        <label for="wallet-pocket">${configuracao.bolsoLabel}</label>
+        <select id="wallet-pocket" name="bolso">
+          <option value="">Selecione</option>
+          <option value="banco">Banco</option>
+          <option value="caixa">Caixa</option>
+        </select>
+        <p class="field-error" data-error-for="bolso"></p>
+      </div>
+
+      <div class="field-group" data-field="descricao">
+        <label for="wallet-description">Descricao/Observacao</label>
+        <textarea id="wallet-description" name="descricao" rows="3" placeholder="Opcional"></textarea>
+        <p class="field-error" data-error-for="descricao"></p>
+      </div>
+
+      <div class="form-actions">
+        <button class="button button-primary" type="submit">${configuracao.submit}</button>
+      </div>
+    </form>
+  `;
+}
+
+export function abrirModalCarteira(tipo, onSubmit) {
+  abrirModal({
+    titulo: tipo === "saida" ? "Registrar Saida Manual" : "Registrar Entrada Manual",
+    descricao: "Os valores sao aplicados imediatamente ao bolso selecionado.",
+    conteudo: renderModalCarteira(tipo),
+    onOpen(root) {
+      const form = root.querySelector("#wallet-form");
+      const selectCategoria = root.querySelector("#wallet-category");
+      const campoOutro = root.querySelector('[data-field="categoriaOutro"]');
+
+      selectCategoria?.addEventListener("change", () => {
+        const mostrarOutro = selectCategoria.value === "Outro";
+        campoOutro?.classList.toggle("hidden", !mostrarOutro);
+      });
+
+      form?.addEventListener("submit", (event) => {
+        onSubmit(event, form);
+      });
+    },
+  });
+}
+
+export function abrirCarteiraPopup() {
+  const root = garantirModalRoot();
+  walletPopupAberto = true;
+  document.removeEventListener("keydown", onWalletEsc);
+  root.innerHTML = renderCarteiraPopup();
+
+  root.querySelector("[data-wallet-dismiss]")?.addEventListener("click", fecharCarteiraPopup);
+  root.querySelector("[data-wallet-close]")?.addEventListener("click", (event) => {
+    if (event.target.matches("[data-wallet-close]")) {
+      fecharCarteiraPopup();
+    }
+  });
+
+  root.querySelectorAll("[data-wallet-flip]").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      root.querySelector("#wallet-card")?.classList.toggle("is-flipped", botao.dataset.walletFlip === "back");
+      if (botao.dataset.walletFlip === "front") {
+        root.querySelector("#wallet-card")?.classList.remove("is-flipped");
+      }
+    });
+  });
+
+  root.querySelectorAll("[data-editable]").forEach((elemento) => {
+    elemento.addEventListener("click", () => abrirEditorInline(elemento));
+  });
+
+  document.addEventListener("keydown", onWalletEsc);
+}
+
+function onWalletEsc(event) {
+  if (event.key === "Escape") {
+    fecharCarteiraPopup();
+  }
+}
+
+export function fecharCarteiraPopup() {
+  const root = document.querySelector("#modal-root");
+
+  if (walletPopupAberto && root?.querySelector(".wallet-backdrop")) {
+    root.innerHTML = "";
   }
 
-  error.textContent = mensagem;
+  walletPopupAberto = false;
+  document.removeEventListener("keydown", onWalletEsc);
+}
 
-  if (mensagem) {
-    input.setAttribute("aria-invalid", "true");
-    return;
+export function atualizarCarteiraPopupSeAberto() {
+  if (walletPopupAberto) {
+    abrirCarteiraPopup();
   }
+}
 
-  input.removeAttribute("aria-invalid");
+export function inicializarCarteiraUI({ onEntrada, onSaida }) {
+  document.querySelector("#wallet-trigger")?.addEventListener("click", () => abrirCarteiraPopup());
+
+  document.addEventListener("click", (event) => {
+    const botao = event.target.closest("[data-wallet-action]");
+
+    if (!botao) {
+      return;
+    }
+
+    if (botao.dataset.walletAction === "entrada") {
+      onEntrada?.();
+      return;
+    }
+
+    if (botao.dataset.walletAction === "saida") {
+      onSaida?.();
+    }
+  });
 }
